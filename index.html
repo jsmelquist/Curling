@@ -1,0 +1,101 @@
+<html> 
+  <head> 
+  <title>Curling</title> 
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.1/jquery.min.js"></script>
+	<script type="text/javascript" charset="utf-8">
+	  var myRock = { x: 64, y: 0, img: null, velX: 5, velY:0.05 }
+	  
+	  var FRICTION = 0.00510;
+    var inMotion = false;
+    var velocityX = 5;
+    var velocityY = 0.08;
+    var rockX = 64;
+    var rockY = 0;
+    var ctx;
+    var WIDTH;
+    var HEIGHT;
+    var intervalId = 0;
+    var rockImage;
+    var rinkImage;
+    var canvasMinY;
+    var canvasMaxY;
+
+    function init_mouse() {
+      canvasMinY = $("#canvas").offset().top;
+      canvasMaxY = canvasMinY + HEIGHT;
+    }
+
+    function onMouseMove(evt) {
+      if (!inMotion) {
+        if (evt.pageY > canvasMinY && evt.pageY < canvasMaxY) {
+          myRock.y = evt.pageY - canvasMinY;
+        }
+      }
+    }
+
+    $(document).mousemove(onMouseMove);
+    $(document).click(throwRock);
+    
+    function throwRock() {
+      if (!inMotion) {
+        inMotion=true; 
+        myRock.velX = $('#id_velocity').attr("value");
+      }
+    }
+    
+    function moveRock() {
+      if (inMotion) {
+        myRock.velY *= (1.000012);
+        myRock.velX *= (1-FRICTION);
+        if ((myRock.velX <= 0.06) && (myRock.velX >= -0.06)) {
+             myRock.velX = 0;
+             myRock.velY = 0;
+        }
+           
+        myRock.y += myRock.velY;
+        myRock.x += myRock.velX;
+        
+        if (myRock.y+16 > HEIGHT || myRock.y<0)
+        {
+          myRock.velY = -(myRock.velY*0.5);
+        }
+        if (myRock.x+16 > WIDTH || myRock.x<0)
+        {
+          myRock.velX = -(myRock.velX*0.9);
+        }
+      }
+    }
+    
+    function clear() {
+      ctx.clearRect(0, 0, WIDTH, HEIGHT);
+    }
+    
+  	function draw() {  
+      clear();
+      moveRock();
+      ctx.drawImage(myRock.img,0,0,32,32,myRock.x,myRock.y,16,16);    
+        
+    }
+    
+    function init() {
+      ctx = $('#canvas')[0].getContext("2d");
+      WIDTH = $("#canvas").width()
+      HEIGHT = $("#canvas").height()
+      myRock.img = new Image();  
+      myRock.img.src = 'img/rock.png';
+      myRock.img.onload = function(){    
+        intervalId = setInterval(draw, 10);  
+      }  
+      init_mouse();
+      $('#id_velocity').attr("value",myRock.velX);
+      return intervalId;
+    }
+	</script>
+  </head> 
+  <body onload="init();"> 
+    <canvas id="canvas" width="1280" height="194" style="background: url(img/rink.png) 0 0 no-repeat;">
+    </canvas> 
+    <br/>
+    <label for="id_velocity">Velocity:</label><input type="text" id="id_velocity" name="velocity" value=""/>
+  </body> 
+</html>

@@ -2,100 +2,143 @@
   <head> 
   <title>Curling</title> 
   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.1/jquery.min.js"></script>
+  <script type="text/javascript" src="js/bouncy.js"></script>
+  <script type="text/javascript" src="js/doodle.js"></script>
 	<script type="text/javascript" charset="utf-8">
-	  var myRock = { x: 64, y: 0, img: null, velX: 5, velY:0.05 }
-	  
-	  var FRICTION = 0.00510;
-    var inMotion = false;
-    var velocityX = 5;
-    var velocityY = 0.08;
-    var rockX = 64;
-    var rockY = 0;
-    var ctx;
-    var WIDTH;
-    var HEIGHT;
-    var intervalId = 0;
-    var rockImage;
-    var rinkImage;
-    var canvasMinY;
-    var canvasMaxY;
+	// Initialize when everything on the page is loaded
+  $(document).ready(function() {
+  	var canvas = document.getElementById("canvas");
+  	//check for support here:
+  	if (canvas.getContext){  
+  		init();
+  	}
+  	else {
+  		//javascript fallback
+  		alert( "Sorry, your browser does not support the canvas element." );
+  	}
+  });
 
-    function init_mouse() {
-      canvasMinY = $("#canvas").offset().top;
-      canvasMaxY = canvasMinY + HEIGHT;
-    }
+  // Start the application
+  function init() {
+  	(function(oo) {
+  		oo.canvas('#canvas');		
 
-    function onMouseMove(evt) {
-      if (!inMotion) {
-        if (evt.pageY > canvasMinY && evt.pageY < canvasMaxY) {
-          myRock.y = evt.pageY - canvasMinY;
+      var rocks = [];
+
+  	  //var myRock = { x: 64, y: 0, img: null, vx: 5, vy:0.05, mass:18, radius: 8 }
+  	  var myRock = oo.image({ src:'img/rock.png',
+                            x: 64, y: 0, radius:8, vx: 5, vy: 0.05,
+                            mass:40, coord:'local', visible:true});
+
+  	  // Hardcode a guard rock
+  	  //var guardRock = { x: 830, y: 85, img: null, vx: 0.00, vy: 0.00, mass:18, radius: 8 }
+  	  var guardRock = oo.image({ src:'img/rock.png',
+                            x: 830, y: 85, radius:8, vx: 0, vy: 0,
+                            mass:40, coord:'local', visible:true});
+                            
+      rocks.push(myRock);
+      rocks.push(guardRock);
+      rocks.push(oo.image({ src:'img/rock_yel.png',
+                            x: 890, y: 72, radius:8, vx: 0, vy: 0,
+                            mass:40, coord:'local', visible:true}));
+      rocks.push(oo.image({ src:'img/rock_yel.png',
+                            x: 950, y: 90, radius:8, vx: 0, vy: 0,
+                            mass:40, coord:'local', visible:true}));
+      rocks.push(oo.image({ src:'img/rock_yel.png',
+                            x: 920, y: 80, radius:8, vx: 0, vy: 0,
+                            mass:40, coord:'local', visible:true}));
+                            
+  	  var FRICTION = 0.00510;
+      var inMotion = false;
+      var ctx;
+      var WIDTH;
+      var HEIGHT;
+      var intervalId = 0;
+      var rockImage;
+      var rinkImage;
+      var canvasMinY;
+      var canvasMaxY;
+
+  		//setting the invisible box boundaries (in this case the canvas)
+  		Bouncy.boundries = {
+  			left: 0 -8,
+  			right: oo.canvas().width - 8, 
+  			top: 0 -8,
+  			bottom: oo.canvas().height -8,
+  		};
+
+      function throwRock() {
+        if (!inMotion) {
+          inMotion=true; 
+          myRock.modify({ vx: $('#id_velocity').attr("value")});
         }
       }
-    }
+      
+      function init_mouse() {
+        canvasMinY = $("#canvas").offset().top;
+        canvasMaxY = canvasMinY + HEIGHT;
+      }
 
-    $(document).mousemove(onMouseMove);
-    $(document).click(throwRock);
-    
-    function throwRock() {
-      if (!inMotion) {
-        inMotion=true; 
-        myRock.velX = $('#id_velocity').attr("value");
-      }
-    }
-    
-    function moveRock() {
-      if (inMotion) {
-        myRock.velY *= (1.000012);
-        myRock.velX *= (1-FRICTION);
-        if ((myRock.velX <= 0.06) && (myRock.velX >= -0.06)) {
-             myRock.velX = 0;
-             myRock.velY = 0;
-        }
-           
-        myRock.y += myRock.velY;
-        myRock.x += myRock.velX;
-        
-        if (myRock.y+16 > HEIGHT || myRock.y<0)
-        {
-          myRock.velY = -(myRock.velY*0.5);
-        }
-        if (myRock.x+16 > WIDTH || myRock.x<0)
-        {
-          myRock.velX = -(myRock.velX*0.9);
+      function onMouseMove(evt) {
+        if (!inMotion) {
+          if (evt.pageY > canvasMinY && evt.pageY < canvasMaxY) {
+           myRock.modify({ y : evt.pageY - canvasMinY});
+          }
         }
       }
-    }
-    
-    function clear() {
-      ctx.clearRect(0, 0, WIDTH, HEIGHT);
-    }
-    
-  	function draw() {  
-      clear();
-      moveRock();
-      ctx.drawImage(myRock.img,0,0,32,32,myRock.x,myRock.y,16,16);    
-        
-    }
-    
-    function init() {
-      ctx = $('#canvas')[0].getContext("2d");
+
+      $(document).mousemove(onMouseMove);
+      $(document).click(throwRock);
+      
+       function moveRock() {
+         if (inMotion) {
+            for(var i = 0; i < rocks.length; i++) {
+               var rock = rocks[i];
+               rock.modify({vy: rock.vy *= (1-FRICTION), 
+                            vx: rock.vx *= (1-FRICTION)});
+               rock.modify({x: rock.x + rock.vx,
+                            y: rock.y + rock.vy});
+               if ((rock.vx <= 0.06) && (rock.vx >= -0.06)) {
+                  rock.modify({vy: 0, vx: 0});
+               }
+               Bouncy.check_walls(rock);
+            }
+          }
+        }
+
+  		//Animate is an endless loop
+  		oo.animate(function() {
+
+				moveRock();
+
+        //for each rock…
+        for(var i = 0; i < rocks.length; i++) {
+          var rock_a = rocks[i];
+          
+          //check for collisions with the current rock
+            for(var j = i + 1; j < rocks.length; j++) {
+             var rock_b = rocks[j];
+             Bouncy.check_collision(rock_a, rock_b);
+            }
+
+            //redraw the rocks
+            rocks[i].draw();
+        }
+
+  		//set "frames" and make sure to clear canvas
+  		}, '40fps', true); 
+
       WIDTH = $("#canvas").width()
       HEIGHT = $("#canvas").height()
-      myRock.img = new Image();  
-      myRock.img.src = 'img/rock.png';
-      myRock.img.onload = function(){    
-        intervalId = setInterval(draw, 10);  
-      }  
       init_mouse();
-      $('#id_velocity').attr("value",myRock.velX);
-      return intervalId;
-    }
-	</script>
+  	})($doodle);
+  }
+  </script>
   </head> 
-  <body onload="init();"> 
+  <body> 
     <canvas id="canvas" width="1280" height="194" style="background: url(img/rink.png) 0 0 no-repeat;">
     </canvas> 
     <br/>
-    <label for="id_velocity">Velocity:</label><input type="text" id="id_velocity" name="velocity" value=""/>
+    <label for="id_velocity">Velocity:</label><input type="text" id="id_velocity" name="velocity" value="5"/>
   </body> 
 </html>
